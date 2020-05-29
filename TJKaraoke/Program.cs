@@ -41,6 +41,12 @@ namespace TJKaraoke
                 else
                 {
                     TJN karaoke = new TJN(args[0], int.Parse(args[1]), false);
+                    /*
+                     foreach (var item in syncQue)
+                    {
+                        Console.WriteLine("{0} {1} {2} {3} {4}  ",item.tick, item.cmd,item.lineNumber, item.indexOfLine, item.str);
+                    }
+                    */
                     Console.OutputEncoding = karaoke.encoding;
                     syncQue = new Queue<TickEvent>(karaoke.lyrics.tickEvents);
                     var midiFile = MidiFile.Read(new MemoryStream(karaoke.midi));

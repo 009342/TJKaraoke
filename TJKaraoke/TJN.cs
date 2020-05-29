@@ -86,7 +86,7 @@ namespace TJKaraoke
                     syncData = new byte[syncSize];
                     stream.Read(syncData, 0, syncSize);
                 }
-                
+
                 switch (country)
                 {
                     case 0:
@@ -157,7 +157,7 @@ namespace TJKaraoke
                                         word = line.Split(new char[] { '_' })[0];
                                         seperator = "_";
                                     }
-                                    if (word != "" && Regex.IsMatch(word, @"^[a-zA-Z0-9@]+$")) //영어 처리부
+                                    if (word != "" && Regex.IsMatch(word, @"^[a-zA-Z0-9@()]+$")) //영어 처리부
                                     {
                                         t.str = word + (seperator == "_" ? "" : seperator);
                                         line = line.Substring(t.str.Length + (seperator == "_" ? 1 : 0));
@@ -172,11 +172,19 @@ namespace TJKaraoke
                                             line = line.Substring(1, line.Length - 1);
                                             if (t.str.Substring(t.str.Length - 1) == "＜")
                                             {
-                                                pronContinue = true;
-                                                t.pronGuide = new PronGuide();
-                                                t.str = t.str.Substring(0, t.str.Length - 1);
-                                                t.str += line.Substring(0, 1);
-                                                line = line.Substring(1, line.Length - 1);
+                                                if (line.IndexOf('＞') > 1)
+                                                {
+                                                    pronContinue = true;
+                                                    t.pronGuide = new PronGuide();
+                                                    t.str = t.str.Substring(0, t.str.Length - 1);
+                                                    t.str += line.Substring(0, 1);
+                                                    line = line.Substring(1, line.Length - 1);
+                                                }
+                                                else
+                                                {
+                                                    t.str = line.Substring(0, 1);
+                                                    line = line.Substring(2, line.Length - 2);
+                                                }
                                             }
                                             else if (pronContinue)
                                             {
