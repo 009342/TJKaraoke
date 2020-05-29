@@ -28,4 +28,14 @@ TJKaraoke.exe [File Name] [Country Code] [MIDI Device ID = 0 (Default)]
 
 3. TJ는 TJ미디어(주)의 상표명입니다.
 
+## OSS Notice
+
+DryWetMIDI
+
+https://github.com/melanchall/drywetmidi
+
+Copyright (c) 2018 Maxim Dobroselsky
+
+MIT License
+
 [LICENSE]: https://github.com/009342/TJKaraoke/blob/master/LICENSE
