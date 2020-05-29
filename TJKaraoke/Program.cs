@@ -23,6 +23,7 @@ namespace TJKaraoke
         static Queue<TickEvent> syncQue = new Queue<TickEvent>();
         static void Main(string[] args)
         {
+#if !DEBUG
             try
             {
                 if (!(args.Length == 2 || args.Length == 3))
@@ -41,12 +42,6 @@ namespace TJKaraoke
                 else
                 {
                     TJN karaoke = new TJN(args[0], int.Parse(args[1]), false);
-                    /*
-                     foreach (var item in syncQue)
-                    {
-                        Console.WriteLine("{0} {1} {2} {3} {4}  ",item.tick, item.cmd,item.lineNumber, item.indexOfLine, item.str);
-                    }
-                    */
                     Console.OutputEncoding = karaoke.encoding;
                     syncQue = new Queue<TickEvent>(karaoke.lyrics.tickEvents);
                     var midiFile = MidiFile.Read(new MemoryStream(karaoke.midi));
@@ -71,6 +66,29 @@ namespace TJKaraoke
                 Console.WriteLine(ex.ToString());
             }
 
+#else
+            TJN karaoke = new TJN(args[0], int.Parse(args[1]), false);
+            Console.OutputEncoding = karaoke.encoding;
+            syncQue = new Queue<TickEvent>(karaoke.lyrics.tickEvents);
+            foreach (var item in syncQue)
+            {
+                Console.WriteLine("{0} {1} {2} {3} {4}  {5}", item.tick, item.cmd, item.lineNumber, item.indexOfLine, item.str, item.pronGuide != null ? item.pronGuide.Pron : "");
+            }
+            var midiFile = MidiFile.Read(new MemoryStream(karaoke.midi));
+            int deviceId = int.Parse((args.Length == 3) ? args[2] : "0");
+            Console.WriteLine(karaoke.lyrics.kNumber);
+            Console.WriteLine(karaoke.lyrics.name);
+            Console.WriteLine(karaoke.lyrics.lyricist);
+            Console.WriteLine(karaoke.lyrics.composer);
+            Console.WriteLine(karaoke.lyrics.singer);
+            var outputDevice = OutputDevice.GetById(deviceId);
+            var playback = midiFile.GetPlayback(outputDevice);
+            playback.Finished += Playback_Finished;
+            Thread thread = new Thread(() => { Playback(playback); });
+            playback.Start();
+            thread.Start();
+            Thread.Sleep(-1);
+#endif
 
         }
 

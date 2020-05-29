@@ -172,18 +172,24 @@ namespace TJKaraoke
                                             line = line.Substring(1, line.Length - 1);
                                             if (t.str.Substring(t.str.Length - 1) == "＜")
                                             {
-                                                if (line.IndexOf('＞') > 1)
+                                                word = line.Split('＞')[0];
+                                                if (Regex.IsMatch(word, @"^[a-zA-Z0-9@()]+$"))
+                                                {
+                                                    t.str = word;
+                                                    line = line.Substring(word.Length + 1);
+                                                }
+                                                else if(word.Length==1)
+                                                {
+                                                    t.str = line.Substring(0, 1);
+                                                    line = line.Substring(2, line.Length - 2);
+                                                }
+                                                else
                                                 {
                                                     pronContinue = true;
                                                     t.pronGuide = new PronGuide();
                                                     t.str = t.str.Substring(0, t.str.Length - 1);
                                                     t.str += line.Substring(0, 1);
                                                     line = line.Substring(1, line.Length - 1);
-                                                }
-                                                else
-                                                {
-                                                    t.str = line.Substring(0, 1);
-                                                    line = line.Substring(2, line.Length - 2);
                                                 }
                                             }
                                             else if (pronContinue)
