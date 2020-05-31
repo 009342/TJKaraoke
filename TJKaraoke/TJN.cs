@@ -22,7 +22,7 @@ namespace TJKaraoke
         //매직이 다른 경우가 있기에 앞 16바이트만 검사
         private static byte[] magic = { 0x54, 0x41, 0x49, 0x4A, 0x49, 0x4E, 0x20, 0x4D, 0x45, 0x44, 0x49, 0x41, 0x20, 0x43, 0x4F, 0x2E };
         private static byte[] xcgmagic = { 0x58, 0x43, 0x47, 0x20, 0x31, 0x2e, 0x30, 0x1a }; //XCG 1.0 
-        private static string regexString = @"^[a-zA-Z0-9@()\]\[/]+$";
+        private static string regexString = @"^[a-zA-Z0-9@()\]\[/']+$";
         private static string[] specialChars = { "@", "(", ")", "っ", "ん", "ー", "ン", "ッ", "　", " ", "ョ", "ょ", "ゃ", "ャ", "ゅ", "ュ", "ぁ", "ァ", "ぃ", "ィ", "ぅ", "ゥ", "ぇ", "ェ", "ぉ", "ォ", "[", "]", "/", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
         private static string[] specialChars2 = { "]", "(" };
         //한 덩어리로 처리해야 할 특수한 문자들
