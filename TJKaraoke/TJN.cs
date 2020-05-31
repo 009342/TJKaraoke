@@ -22,7 +22,9 @@ namespace TJKaraoke
         //매직이 다른 경우가 있기에 앞 16바이트만 검사
         private static byte[] magic = { 0x54, 0x41, 0x49, 0x4A, 0x49, 0x4E, 0x20, 0x4D, 0x45, 0x44, 0x49, 0x41, 0x20, 0x43, 0x4F, 0x2E };
         private static byte[] xcgmagic = { 0x58, 0x43, 0x47, 0x20, 0x31, 0x2e, 0x30, 0x1a }; //XCG 1.0 
-        private static string[] specialCharacer = { "@", "(", ")", "っ", "ん", "ー", "ン", "ッ", "　", " ", "ョ", "ょ", "ゃ", "ャ", "ゅ", "ュ", "ぁ", "ァ", "ぃ", "ィ", "ぅ", "ゥ", "ぇ", "ェ", "ぉ", "ォ" };
+        private static string regexString = @"^[a-zA-Z0-9@()\]\[/]+$";
+        private static string[] specialChars = { "@", "(", ")", "っ", "ん", "ー", "ン", "ッ", "　", " ", "ョ", "ょ", "ゃ", "ャ", "ゅ", "ュ", "ぁ", "ァ", "ぃ", "ィ", "ぅ", "ゥ", "ぇ", "ェ", "ぉ", "ォ", "[", "]", "/", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+        private static string[] specialChars2 = { "]", "(" };
         //한 덩어리로 처리해야 할 특수한 문자들
         public string path { get; private set; }
         public int country { get; private set; }
@@ -129,6 +131,8 @@ namespace TJKaraoke
                                 string seperator = "";
                                 TickEvent t = new TickEvent();
                                 t.cmd = (byte)syncStream.ReadByte();
+                                t.lineNumber = gasaLine;
+                                t.indexOfLine = indexOfLine;
                                 if (t.cmd == 0x01)
                                 {
                                     while (line == "")
@@ -157,96 +161,93 @@ namespace TJKaraoke
                                         word = line.Split(new char[] { '_' })[0];
                                         seperator = "_";
                                     }
-                                    if (word != "" && Regex.IsMatch(word, @"^[a-zA-Z0-9@()]+$")) //영어 처리부
+                                    if (word != "" && Regex.IsMatch(word, regexString)) //영어, 숫자 처리부
                                     {
                                         t.str = word + (seperator == "_" ? "" : seperator);
                                         line = line.Substring(t.str.Length + (seperator == "_" ? 1 : 0));
                                     }
-                                    else
+                                    if (pronContinue)
                                     {
+                                        if (line.Substring(1, 1) == "＞")
+                                        {
+                                            t.str = line.Substring(0, 1);
+                                            line = line.Substring(2, line.Length - 2);
+                                            pronContinue = false;
+                                        }
+                                        else
+                                        {
+                                            t.pronGuide = tickEvents.Last((last) =>
+                                            {
+                                                return last.cmd == 0x01;
+                                            }).pronGuide;
+                                        }
+                                    }
+                                    while (true)
+                                    {
+                                        while (line.Length > 0 && specialChars.Contains(line.Substring(0, 1)))
+                                        {
 
-
-                                        do
+                                            t.str += line.Substring(0, 1);
+                                            line = line.Substring(1);
+                                        }
+                                        if (line.Length > 0 && t.str.Length > 0 && specialChars2.Contains(t.str.Substring(t.str.Length - 1)) && line.Substring(0, 1) != "＜")
                                         {
                                             t.str += line.Substring(0, 1);
-                                            line = line.Substring(1, line.Length - 1);
-                                            if (t.str.Substring(t.str.Length - 1) == "＜")
-                                            {
-                                                word = line.Split('＞')[0];
-                                                if (Regex.IsMatch(word, @"^[a-zA-Z0-9@()]+$"))
-                                                {
-                                                    t.str = word;
-                                                    line = line.Substring(word.Length + 1);
-                                                }
-                                                else if(word.Length==1)
-                                                {
-                                                    t.str = line.Substring(0, 1);
-                                                    line = line.Substring(2, line.Length - 2);
-                                                }
-                                                else
-                                                {
-                                                    pronContinue = true;
-                                                    t.pronGuide = new PronGuide();
-                                                    t.str = t.str.Substring(0, t.str.Length - 1);
-                                                    t.str += line.Substring(0, 1);
-                                                    line = line.Substring(1, line.Length - 1);
-                                                }
-                                            }
-                                            else if (pronContinue)
-                                            {
-                                                t.pronGuide = tickEvents.Last((last) =>
-                                                {
-                                                    return last.cmd == 0x01;
-                                                }).pronGuide;
-                                                if (line.Substring(0, 1) == "＞")
-                                                {
-                                                    line = line.Substring(1, line.Length - 1);
-                                                    pronContinue = false;
-                                                }
-                                            }
-                                        } while (specialCharacer.Contains(t.str.Substring(t.str.Length - 1)));
-                                        if (line.Length > 0)
-                                        {
-                                            bool loop = true;
-                                            while (loop && line.Length > 0)
-                                            {
-                                                if (specialCharacer.Contains(line.Substring(0, 1)))
-                                                {
-                                                    t.str += line.Substring(0, 1);
-                                                    line = line.Substring(1, line.Length - 1);
-                                                }
-                                                else if (line.Substring(0, 1) == "「")
-                                                {
-                                                    if (t.pronGuide == null)
-                                                        t.pronGuide = new PronGuide();
-                                                    t.pronGuide.Pron = line.Split('「')[1].Split('」')[0];
-                                                    line = line.Substring((t.pronGuide.Pron.Length + 2), line.Length - (t.pronGuide.Pron.Length + 2));
-                                                }
-                                                else
-                                                {
-                                                    loop = false;
-                                                }
-                                            }
-
+                                            line = line.Substring(1);
                                         }
+                                        else break;
+                                    }
+                                    if (line.Length > 0 && line.Substring(0, 1) == "＜")
+                                    {
+                                        word = line.Substring(1).Split('＞')[0];
+                                        if (Regex.IsMatch(word, regexString) || word.Length == 1)
+                                        {
+                                            t.str = word;
+                                            line = line.Substring(word.Length + 2);
+                                        }
+                                        else
+                                        {
+                                            pronContinue = true;
+                                            t.pronGuide = new PronGuide();
+                                            line = line.Substring(1, line.Length - 1);
+                                            t.str += line.Substring(0, 1);
+                                            line = line.Substring(1, line.Length - 1);
+                                        }
+                                    }
+                                    if (line.Length > 0)
+                                    {
+                                        bool loop = true;
+                                        while (loop)
+                                        {
+                                            if (line.Length > 0 && t.str == "")
+                                            {
+                                                t.str += line.Substring(0, 1);
+                                                line = line.Substring(1);
+                                            }
+                                            if (line.Length > 0 && specialChars.Contains(line.Substring(0, 1)))
+                                            {
+                                                t.str += line.Substring(0, 1);
+                                                line = line.Substring(1, line.Length - 1);
+                                            }
+                                            else if (line.Length > 0 && line.Substring(0, 1) == "「")
+                                            {
+                                                if (t.pronGuide == null)
+                                                    t.pronGuide = new PronGuide();
+                                                t.pronGuide.Pron = line.Split('「')[1].Split('」')[0];
+                                                line = line.Substring((t.pronGuide.Pron.Length + 2), line.Length - (t.pronGuide.Pron.Length + 2));
+                                            }
+                                            else
+                                            {
+                                                loop = false;
+                                            }
+                                        }
+
                                     }
                                     if (line == "")
                                     {
                                         gasaLine += 1;
                                         indexOfLine = 0;
                                     }
-                                }
-                                else
-                                {
-                                    if (tickEvents.Exists((last) => { return last.cmd == 0x01; }))
-                                    {
-                                        t.lineNumber = tickEvents.Last((last) => { return last.cmd == 0x01; }).lineNumber;
-                                    }
-                                    else
-                                    {
-                                        t.lineNumber = gasaLine;
-                                    }
-
                                 }
                                 syncStream.Read(buffer, 0, 4);
                                 t.tick = BitConverter.ToInt32(buffer, 0);
