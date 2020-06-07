@@ -168,18 +168,15 @@ namespace TJKaraoke
                                     }
                                     if (pronContinue)
                                     {
+                                        t.pronGuide = tickEvents.Last((last) =>
+                                        {
+                                            return last.cmd == 0x01;
+                                        }).pronGuide;
                                         if (line.Substring(1, 1) == "＞")
                                         {
                                             t.str = line.Substring(0, 1);
                                             line = line.Substring(2, line.Length - 2);
                                             pronContinue = false;
-                                        }
-                                        else
-                                        {
-                                            t.pronGuide = tickEvents.Last((last) =>
-                                            {
-                                                return last.cmd == 0x01;
-                                            }).pronGuide;
                                         }
                                     }
                                     while (true)
@@ -274,12 +271,26 @@ namespace TJKaraoke
         public int tick;
         public byte cmd;
         public string str = "";
-        public PronGuide pronGuide;
+        private PronGuide privPronGuide;
+        public PronGuide pronGuide
+        {
+            get
+            {
+                return privPronGuide;
+            }
+            set
+            {
+                privPronGuide = value;
+                privPronGuide.Ref = new List<TickEvent>();
+                privPronGuide.Ref.Add(this);
+            }
+        }
         public int lineNumber = 0;
         public int indexOfLine = 0;
     }
     class PronGuide
     {
         public string Pron;
+        public List<TickEvent> Ref;
     }
 }
