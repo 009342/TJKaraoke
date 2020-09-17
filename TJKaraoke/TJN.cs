@@ -87,48 +87,48 @@ namespace TJKaraoke
                         throw new Exception();
                     buffer = new byte[2];
                     stream.Read(buffer, 0, 2);
-                    lyricsSize = BitConverter.ToInt16(buffer, 0);
+                    LyricsSize = BitConverter.ToInt16(buffer, 0);
                     stream.Read(buffer, 0, 2);
-                    syncSize = BitConverter.ToInt16(buffer, 0);
-                    lyricsData = new byte[lyricsSize];
-                    stream.Read(lyricsData, 0, lyricsSize);
-                    syncData = new byte[syncSize];
-                    stream.Read(syncData, 0, syncSize);
+                    SyncSize = BitConverter.ToInt16(buffer, 0);
+                    LyricsData = new byte[LyricsSize];
+                    stream.Read(LyricsData, 0, LyricsSize);
+                    SyncData = new byte[SyncSize];
+                    stream.Read(SyncData, 0, SyncSize);
                 }
 
                 switch (country)
                 {
                     case 0:
-                        encoding = Encoding.GetEncoding("EUC-KR");
+                        Encoding = Encoding.GetEncoding("EUC-KR");
                         break;
                     case 1:
-                        encoding = Encoding.Default;
+                        Encoding = Encoding.Default;
                         break;
                     case 3:
-                        encoding = Encoding.GetEncoding("Shift_JIS");
+                        Encoding = Encoding.GetEncoding("Shift_JIS");
                         break;
                     default:
                         throw new NotImplementedException();
                 }
-                lyrics = new SongInfo();
-                lyrics.tickEvents = new List<TickEvent>();
-                var tickEvents = lyrics.tickEvents;
-                using (Stream syncStream = new MemoryStream(syncData))
+                Lyrics = new SongInfo();
+                Lyrics.tickEvents = new List<TickEvent>();
+                var tickEvents = Lyrics.tickEvents;
+                using (Stream syncStream = new MemoryStream(SyncData))
                 {
-                    using (Stream lyricsStream = new MemoryStream(lyricsData))
+                    using (Stream lyricsStream = new MemoryStream(LyricsData))
                     {
-                        using (StreamReader streamReader = new StreamReader(lyricsStream, encoding))
+                        using (StreamReader streamReader = new StreamReader(lyricsStream, Encoding))
                         {
                             int gasaLine = 0;
                             int indexOfLine = 0;
-                            lyrics.kNumber = int.Parse(streamReader.ReadLine().Split('#')[1]);
+                            Lyrics.kNumber = int.Parse(streamReader.ReadLine().Split('#')[1]);
                             streamReader.ReadLine();
-                            lyrics.name = streamReader.ReadLine();
+                            Lyrics.title = streamReader.ReadLine();
+                            Lyrics.subTitle = streamReader.ReadLine();
                             streamReader.ReadLine();
-                            streamReader.ReadLine();
-                            lyrics.lyricist = streamReader.ReadLine();
-                            lyrics.composer = streamReader.ReadLine();
-                            lyrics.singer = streamReader.ReadLine();
+                            Lyrics.lyricist = streamReader.ReadLine();
+                            Lyrics.composer = streamReader.ReadLine();
+                            Lyrics.singer = streamReader.ReadLine();
                             buffer = new byte[4];
                             string line = streamReader.ReadLine();
                             bool pronContinue = false;
