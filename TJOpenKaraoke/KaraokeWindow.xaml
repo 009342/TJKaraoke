@@ -1,0 +1,16 @@
+﻿<Window x:Name="KWindow" x:Class="TJOpenKaraoke.KaraokeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TJOpenKaraoke"
+        mc:Ignorable="d"
+        Title="KaraokeWindow" Height="450" Width="800" Closing="KWindow_Closing">
+    <Grid x:Name="mainGrid">
+        <StackPanel VerticalAlignment="Bottom">
+            <DockPanel Name="dockpanel" Height="150"/>
+            <DockPanel Name="dockpanel2" Height="150"/>
+        </StackPanel>
+
+    </Grid>
+</Window>

@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TJKaraokeTest", "TJKaraokeT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TJKaraoke", "TJKaraoke\TJKaraoke.csproj", "{1B9A2402-FB72-40BC-AF76-363D9402BFB1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TJOpenKaraoke", "TJOpenKaraoke\TJOpenKaraoke.csproj", "{A71C4FA4-C920-4998-B430-7DFE044810F7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{1B9A2402-FB72-40BC-AF76-363D9402BFB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B9A2402-FB72-40BC-AF76-363D9402BFB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1B9A2402-FB72-40BC-AF76-363D9402BFB1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A71C4FA4-C920-4998-B430-7DFE044810F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A71C4FA4-C920-4998-B430-7DFE044810F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A71C4FA4-C920-4998-B430-7DFE044810F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A71C4FA4-C920-4998-B430-7DFE044810F7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

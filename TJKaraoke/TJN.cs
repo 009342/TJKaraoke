@@ -41,21 +41,30 @@ namespace TJKaraoke
         public byte[] LyricsData { get; private set; }
         public SongInfo Lyrics { get; private set; }
         public Encoding Encoding { get; private set; }
+        public TJN(byte[] data, int country)
+        {
+            this.Country = country;
+            this.Path = null;
+            LoadData(new MemoryStream(data), country);
+        }
         public TJN(string path, int country, bool isCompressed)
         {
-
             if (isCompressed)
             {
                 throw new NotImplementedException("");
             }
             this.Country = country;
             this.Path = path;
-            using (FileStream fstream = File.OpenRead(path))
+            LoadData(File.OpenRead(path), country);
+        }
+        private void LoadData(Stream fstream, int country)
+        {
+            using (fstream)
             {
                 byte[] buffer = new byte[0x10];
                 fstream.Read(buffer, 0, 0x10);
                 if (!ByteArrayCompare(magic, buffer))
-                    throw new Exception("");
+                    throw new Exception("The file header has been corrupted.");
                 fstream.Position += 0x10;
                 buffer = new byte[4];
 
@@ -287,10 +296,10 @@ namespace TJKaraoke
                 {
                     using (StreamReader streamReader = new StreamReader(lyricsStream, Encoding.GetEncoding("ks_c_5601-1987")))
                     {
-                        while (streamReader.ReadLine() != "HANGUL")
+                        while (streamReader.ReadLine() != "HANGUL" && !streamReader.EndOfStream)
                         {
                         }
-                        while(!streamReader.EndOfStream)
+                        while (!streamReader.EndOfStream)
                         {
                             Lyrics.HangulLyrics = streamReader.ReadToEnd();
                         }

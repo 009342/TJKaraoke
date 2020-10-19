@@ -1,0 +1,17 @@
+﻿<Window x:Name="mainWindow" x:Class="TJOpenKaraoke.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TJOpenKaraoke"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="441.935" Width="545.161" Loaded="mainWindow_Loaded">
+    <Grid>
+        <ComboBox x:Name="MIDI_PortA" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="150"/>
+        <ComboBox x:Name="MIDI_PortB" HorizontalAlignment="Left" Margin="10,37,0,0" VerticalAlignment="Top" Width="150"/>
+        <ComboBox x:Name="RegionSelect" HorizontalAlignment="Left" Margin="10,64,0,0" VerticalAlignment="Top" Width="150"/>
+        <ListBox x:Name="files" HorizontalAlignment="Left" Height="268" Margin="10,91,0,0" VerticalAlignment="Top" Width="150"/>
+        <Button x:Name="run" Content="시작" HorizontalAlignment="Left" Margin="10,364,0,0" VerticalAlignment="Top" Width="150" Click="run_Click"/>
+
+    </Grid>
+</Window>
