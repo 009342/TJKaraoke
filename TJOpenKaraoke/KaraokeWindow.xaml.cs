@@ -1,4 +1,5 @@
 ﻿using Melanchall.DryWetMidi.Core;
+using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Devices;
 using Melanchall.DryWetMidi.Interaction;
 using lzo.net;
@@ -36,7 +37,6 @@ namespace TJOpenKaraoke
         TJN karaoke = null;
         Thread thread;
         LinearGradientBrush fill = new LinearGradientBrush();
-
         public KaraokeWindow(byte[] file, int country, int MidiOutputA, int MidiOutputB)
         {
             InitializeComponent();
@@ -116,12 +116,11 @@ namespace TJOpenKaraoke
             thread.Abort();
 
         }
-        private int line = 0;
-        private int indexofline = 0;
         private LyricsTextBlock component = null;
         private void QueThread(Playback sender)
         {
             //KWindow.Dispatcher.Invoke(new Action(()=> { }));
+            bool started = false;
             while (syncQue.Count != 0)
             {
                 int time = (int)TimeConverter.ConvertFrom(sender.GetCurrentTime<ITimeSpan>(), sender.TempoMap);
@@ -129,75 +128,76 @@ namespace TJOpenKaraoke
                 if (peek.tick <= time)
                 {
                     TickEvent tick = syncQue.Dequeue();
-                    if (tick.cmd == 0x09) //가사 표출 시작
+                    if (!started && tick.cmd == 0x09) //가사 표출 시작
                     {
-                        ShowNextLine();
-                        ShowNextLine();
+                        ShowLine(0);
+                        ShowLine(1);
+                        started = true;
                     }
-                    if (tick.cmd == 0x01)
+                    if (tick.cmd == 0x0a)
                     {
-                        if (line >= 2 && line < tick.lineNumber + 2)
+                        ShowLine(syncQue.Peek().lineNumber);
+                        ShowLine(syncQue.Peek().lineNumber + 1);
+                    }
+                    if (tick.cmd == 0x01 && tick.lineNumber > 0)
+                    {
+                        if (tick.indexOfLine == 0)
                         {
-                            KWindow.Dispatcher.Invoke(new Action(() =>
-                            {
-                                if (lastdisplayedline != -1)
-                                {
-                                    if (lastdisplayedline == 0)
-                                    {
-                                        dockpanel2.Children.Clear();//Dispose를 해줄 필요가 없다고??
-                                    }
-                                    if (lastdisplayedline == 1)
-                                    {
-                                        dockpanel.Children.Clear();//Dispose를 해줄 필요가 없다고??
-                                    }
-                                }
-                            }));
-                            ShowNextLine();
+                            ShowLine(tick.lineNumber + 1);
                         }
                     }
 
                 }
                 KWindow.Dispatcher.Invoke(new Action(() =>
                 {
-                    LyricsTextBlock temp = null;
-                    foreach (var item in dockpanel.Children)
+                    if (component == null || !(component.starttick <= time && time <= component.endtick))
                     {
-                        if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
-                        {
-                            temp = (LyricsTextBlock)item;
-                        }
-                    }
-                    foreach (var item in dockpanel2.Children)
-                    {
-                        if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
-                        {
-                            temp = (LyricsTextBlock)item;
-                        }
-                    }
-                    if (temp != null)
-                    {
-
-                        if (component != null && component != temp)
+                        if (component != null)
                         {
                             component.Foreground = Brushes.Blue;
                         }
-                        component = temp;
-                        fill.GradientStops[1].Offset = ((double)(time - component.starttick)) / ((double)(component.endtick - component.starttick));
-                        fill.GradientStops[2].Offset = ((double)(time - component.starttick)) / ((double)(component.endtick - component.starttick));
+                        component = null;
+                        foreach (var item in dockpanel.Children)
+                        {
+                            if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
+                            {
+                                component = (LyricsTextBlock)item;
+                            }
+                        }
+                        foreach (var item in dockpanel2.Children)
+                        {
+                            if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
+                            {
+                                component = (LyricsTextBlock)item;
+                            }
+                        }
+                    }
+                    if (component != null)
+                    {
+                        KWindow.Title = string.Format("{4} {0} {1}-{2} {3}", time, component.starttick, component.endtick, (time - component.starttick) / ((double)(component.endtick - component.starttick)), component.Text);
+                        fill.GradientStops[1].Offset = (time - component.starttick) / ((double)(component.endtick - component.starttick));
+                        fill.GradientStops[2].Offset = (time - component.starttick) / ((double)(component.endtick - component.starttick));
                         component.Foreground = fill;
-
                     }
                 }));
                 Thread.Sleep(1);
             }
         }
 
-        private int lastdisplayedline = -1;
-        private void ShowNextLine()
+        private void ShowLine(int line)
         {
             List<TickEvent> lyricsList = new List<TickEvent>(karaoke.Lyrics.tickEvents.FindAll(q => (q.cmd == 0x01 || q.cmd == 0x02) && q.lineNumber == line));
+
             KWindow.Dispatcher.Invoke(new Action(() =>
             {
+                if ((line + 1) % 2 == 0)
+                {
+                    dockpanel2.Children.Clear();//Dispose를 해줄 필요가 없다고??
+                }
+                if ((line + 1) % 2 == 1)
+                {
+                    dockpanel.Children.Clear();//Dispose를 해줄 필요가 없다고??
+                }
                 foreach (var item in lyricsList)
                 {
                     if (item.cmd == 0x01)
@@ -218,7 +218,7 @@ namespace TJOpenKaraoke
                                 starttick = 0,
                                 endtick = 0
                             };
-                            if (lastdisplayedline == 0)
+                            if (item.lineNumber % 2 == 1)
                                 dockpanel2.Children.Add(lyricsTextBlock);
                             else
                                 dockpanel.Children.Add(lyricsTextBlock);
@@ -236,7 +236,7 @@ namespace TJOpenKaraoke
                             starttick = item.tick,
                             endtick = lyricsList[(lyricsList.IndexOf(item) + 1)].tick
                         };
-                        if (lastdisplayedline == 0)
+                        if (item.lineNumber % 2 == 1)
                             dockpanel2.Children.Add(lyricsTextBlock);
                         else
                             dockpanel.Children.Add(lyricsTextBlock);
@@ -256,7 +256,7 @@ namespace TJOpenKaraoke
                                 starttick = 0,
                                 endtick = 0
                             };
-                            if (lastdisplayedline == 0)
+                            if (item.lineNumber % 2 == 1)
                                 dockpanel2.Children.Add(lyricsTextBlock);
                             else
                                 dockpanel.Children.Add(lyricsTextBlock);
@@ -267,8 +267,95 @@ namespace TJOpenKaraoke
                 }
                 UpdateLayout();
             }));
-            lastdisplayedline = (lastdisplayedline + 1) % 2;
-            line++;
+        }
+
+        private void KWindow_KeyDown(object sender, KeyEventArgs e)
+        {
+            int time = (int)TimeConverter.ConvertFrom(playbackA.GetCurrentTime<ITimeSpan>(), playbackA.TempoMap);
+            if (e.Key == Key.Right)
+            {
+                TickEvent tc = karaoke.Lyrics.tickEvents.Find(q => (q.cmd == 0x01) && q.tick >= time);
+                tc = karaoke.Lyrics.tickEvents.Find(q => (q.cmd == 0x01) && q.lineNumber == tc.lineNumber + 1);
+                if (tc != null)
+                {
+                    playbackA.Stop();
+                    playbackB.Stop();
+                    for (int i = 0; i < 16; i++)
+                    {
+                        outputDeviceA.SendEvent(new ControlChangeEvent(ControlName.AllNotesOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                        outputDeviceB.SendEvent(new ControlChangeEvent(ControlName.AllNotesOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                        outputDeviceA.SendEvent(new ControlChangeEvent(ControlName.AllSoundOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                        outputDeviceB.SendEvent(new ControlChangeEvent(ControlName.AllSoundOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                    }
+                    syncQue = new Queue<TickEvent>(karaoke.Lyrics.tickEvents.FindAll(q => q.lineNumber >= tc.lineNumber));
+                    ShowLine(tc.lineNumber);
+                    ShowLine(tc.lineNumber + 1);
+                    playbackA.MoveToTime(TimeConverter.ConvertTo(tc.tick, TimeSpanType.Midi, playbackA.TempoMap));
+                    playbackB.MoveToTime(TimeConverter.ConvertTo(tc.tick, TimeSpanType.Midi, playbackB.TempoMap));
+                    playbackA.Start();
+                    playbackB.Start();
+                }
+            }
+            if (e.Key == Key.Left)
+            {
+                TickEvent tc = karaoke.Lyrics.tickEvents.Find(q => (q.cmd == 0x01) && q.tick >= time);
+                tc = karaoke.Lyrics.tickEvents.Find(q => (q.cmd == 0x01) && q.lineNumber == tc.lineNumber - 1);
+                if (tc != null)
+                {
+                    playbackA.Stop();
+                    playbackB.Stop();
+                    for (int i = 0; i < 16; i++)
+                    {
+                        outputDeviceA.SendEvent(new ControlChangeEvent(ControlName.AllNotesOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                        outputDeviceB.SendEvent(new ControlChangeEvent(ControlName.AllNotesOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                        outputDeviceA.SendEvent(new ControlChangeEvent(ControlName.AllSoundOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                        outputDeviceB.SendEvent(new ControlChangeEvent(ControlName.AllSoundOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                    }
+                    syncQue = new Queue<TickEvent>(karaoke.Lyrics.tickEvents.FindAll(q => q.lineNumber >= tc.lineNumber));
+                    ShowLine(tc.lineNumber);
+                    ShowLine(tc.lineNumber + 1);
+                    playbackA.MoveToTime(TimeConverter.ConvertTo(tc.tick, TimeSpanType.Midi, playbackA.TempoMap));
+                    playbackB.MoveToTime(TimeConverter.ConvertTo(tc.tick, TimeSpanType.Midi, playbackB.TempoMap));
+                    playbackA.Start();
+                    playbackB.Start();
+                }
+            }
+            if (e.Key == Key.Down)
+            {
+                playbackA.Stop();
+                playbackB.Stop();
+                for (int i = 0; i < 16; i++)
+                {
+                    outputDeviceA.SendEvent(new ControlChangeEvent(ControlName.AllNotesOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                    outputDeviceB.SendEvent(new ControlChangeEvent(ControlName.AllNotesOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                    outputDeviceA.SendEvent(new ControlChangeEvent(ControlName.AllSoundOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                    outputDeviceB.SendEvent(new ControlChangeEvent(ControlName.AllSoundOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                }
+                playbackA.Speed = 0.5;
+                playbackB.Speed = 0.5;
+                playbackA.Start();
+                playbackB.Start();
+            }
+            if (e.Key == Key.Space)
+            {
+                if(playbackA.IsRunning==true)
+                {
+                    playbackA.Stop();
+                    playbackB.Stop();
+                    for (int i = 0; i < 16; i++)
+                    {
+                        outputDeviceA.SendEvent(new ControlChangeEvent(ControlName.AllNotesOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                        outputDeviceB.SendEvent(new ControlChangeEvent(ControlName.AllNotesOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                        outputDeviceA.SendEvent(new ControlChangeEvent(ControlName.AllSoundOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                        outputDeviceB.SendEvent(new ControlChangeEvent(ControlName.AllSoundOff.AsSevenBitNumber(), (SevenBitNumber)0) { Channel = (FourBitNumber)i });
+                    }
+                }
+                else
+                {
+                    playbackA.Start();
+                    playbackB.Start();
+                }
+            }
         }
     }
     class LyricsTextBlock : TextBlock

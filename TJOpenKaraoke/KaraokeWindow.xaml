@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TJOpenKaraoke"
         mc:Ignorable="d"
-        Title="KaraokeWindow" Height="450" Width="800" Closing="KWindow_Closing">
+        Title="KaraokeWindow" Height="450" Width="800" Closing="KWindow_Closing" KeyDown="KWindow_KeyDown">
     <Grid x:Name="mainGrid">
         <StackPanel VerticalAlignment="Bottom">
             <DockPanel Name="dockpanel" Height="150"/>

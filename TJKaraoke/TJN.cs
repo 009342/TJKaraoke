@@ -20,10 +20,11 @@ namespace TJKaraoke
         private static byte[] magic = { 0x54, 0x41, 0x49, 0x4A, 0x49, 0x4E, 0x20, 0x4D, 0x45, 0x44, 0x49, 0x41, 0x20, 0x43, 0x4F, 0x2E };
         private static byte[] xcgmagic = { 0x58, 0x43, 0x47, 0x20, 0x31, 0x2e, 0x30, 0x1a }; //XCG 1.0 
 
-        private static char[] specialCharsc = { '@', ')', 'っ', 'ん', 'ー', 'ン', 'ッ', 'ョ', 'ょ', 'ゃ', 'ャ', 'ゅ', 'ュ', 'ぁ', 'ァ', 'ぃ', 'ィ', 'ぅ', 'ゥ', 'ぇ', 'ェ', 'ぉ', 'ォ', '[', ']', '/', '　', ' ' }; //(는 나오면 덩어리로 처리해줘야 하니 예외,
+        //private static char[] specialCharsc = { '@', ')', 'っ', 'ん', 'ー', 'ン', 'ッ', 'ョ', 'ょ', 'ゃ', 'ャ', 'ゅ', 'ュ', 'ぁ', 'ァ', 'ぃ', 'ィ', 'ぅ', 'ゥ', 'ぇ', 'ェ', 'ぉ', 'ォ', '[', ']', '/', '　', ' ' }; //(는 나오면 덩어리로 처리해줘야 하니 예외,
+        private static char[] specialCharsc = { '@', ')', 'ー', 'ン', 'ッ', 'ョ', 'ょ', 'ゃ', 'ャ', 'ゅ', 'ュ', 'ぁ', 'ァ', 'ぃ', 'ィ', 'ぅ', 'ゥ', 'ぇ', 'ェ', 'ぉ', 'ォ', '　', ' ' }; //(는 나오면 덩어리로 처리해줘야 하니 예외,
 
         private static char[] specialCharsc2 = { '　', ' ' }; //La la이런 경우에는 잘라주어야 겠지
-        private static char[] specialCharsc3 = { '(' }; //전에 문자를 확인할 필요가 있을 경우, 전 문자가 ( 인 경우
+        private static char[] specialCharsc3 = { '(', }; //전에 문자를 확인할 필요가 있을 경우, 전 문자가 ( 인 경우
         private static char[] specialCharsc4 = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
         ,'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\''}; //알파벳 예외처리 ばABC같은 경우에는 별도로
         private static char[] specialCharsc5 = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
@@ -172,47 +173,64 @@ namespace TJKaraoke
                         int gasaindex = 0;
                         int mode = 0;
                         bool cut = true; //연속을 자를 것인가, 처음에 영어가 나올 경우를 대비에서 true로 설정
+                        bool skip = false;
                         PronGuide pronGuide = null;
                         char prev = '\r';
+                        string chunk = "";
+                        bool front = false;
+                        bool back = false;
                         while (lyricsQue.Count != 0)
                         {
                             char c = lyricsQue.Dequeue();
+
                             if (c == '\n')
                             {
                                 cut = true;
                                 gasaline++;
                                 gasaindex = 0;
                                 mode = 0;
+                                skip = true;
                             }
                             else if (c == '_') //_는 무조건 끊어주야 하기에 cut=true
                             {
                                 cut = true;
+                                skip = true;
+                            }
+                            else if (c == '[')
+                            {
+                                mode = 3;
+                                skip = false;
                             }
                             else if (c == '＜')
                             {
                                 cut = true;
                                 mode = 1;
                                 pronGuide = new PronGuide();
+                                skip = true;
                             }
                             else if (c == '＞')
                             {
                                 mode = 0;
                                 cut = false;
                                 pronGuide = null;
+                                skip = true;
                             }
                             else if (c == '「')
                             {
                                 mode = 2;
+                                skip = true;
                             }
                             else if (c == '」')
                             {
                                 mode = 0;
                                 pronGuide = null;
+                                skip = true;
                             }
-                            else if (specialCharsc3.Contains(prev)) //전 문자가 (인 경우에는 무조건 붙여줘야 함
+                            else if (!cut && specialCharsc3.Contains(prev)) //전 문자가 (인 경우에는 무조건 붙여줘야 함
                             {
                                 lyricsEventsQueue.LastOrDefault().str += c.ToString();
                                 prev = c;
+                                skip = true;
                             }
                             else if (mode == 2) //발음기호 추가해줌
                             {
@@ -221,6 +239,7 @@ namespace TJKaraoke
                                     lyricsEventsQueue.LastOrDefault().PronGuide = new PronGuide();
                                 }
                                 lyricsEventsQueue.LastOrDefault().PronGuide.Pron += c.ToString();
+                                skip = true;
                             }
                             else if (!cut && specialCharsc.Contains(c))
                             {
@@ -230,7 +249,80 @@ namespace TJKaraoke
                                     cut = true;
                                 }
                                 prev = c;
+                                skip = true;
                             }
+
+                            if (back)
+                            {
+                                chunk += c.ToString();
+                                prev = c;
+                                back = false;
+                            }
+
+                            if (!skip && c == 'ん') //이게 최선인걸까
+                            {
+                                TickEvent temp = lyricsEventsQueue.LastOrDefault();
+                                if (temp.PronGuide == null || temp.PronGuide.Pron.Length == 1 || (temp.PronGuide.Ref.Count == 1 && temp.PronGuide.Ref[0].str.Length == 1))
+                                {
+                                    temp.str += c.ToString();
+                                    skip = true;
+                                }
+                                prev = c;
+                            }
+                            else if (!skip && c == 'っ')
+                            {
+                                TickEvent temp = lyricsEventsQueue.LastOrDefault();
+                                if (temp.PronGuide == null)
+                                {
+                                    temp.str += c.ToString();
+                                    skip = true;
+                                }
+                                else
+                                {
+                                    if (temp.PronGuide.Pron.Last() == 'つ' || temp.PronGuide.Pron.Last() == 'お')
+                                    {
+                                        skip = false;
+                                    }
+                                    else
+                                    {
+                                        temp.str += c.ToString();
+                                        skip = true;
+                                    }
+                                }
+                                prev = c;
+                            }
+
+                            if (mode == 3)
+                            {
+                                chunk += c;
+                                prev = c;
+                                if (c != ']') skip = true;
+                                else
+                                {
+                                    if (chunk.Contains("/"))
+                                    {
+                                        front = true;
+                                    }
+                                    else //[0]
+                                    {
+                                        back = true;
+                                    }
+                                    skip = true;
+                                    mode = 0;
+                                }
+                            }
+
+
+                            if (front)
+                            {
+                                lyricsEventsQueue.LastOrDefault().str += chunk;
+                                prev = chunk.Last();
+                                chunk = "";
+                                front = false;
+                            }
+
+                            if (skip)
+                                skip = false;
                             else if (!cut && specialCharsc4.Contains(prev) && specialCharsc4.Contains(c))
                             {
                                 lyricsEventsQueue.LastOrDefault().str += c.ToString();
@@ -251,14 +343,17 @@ namespace TJKaraoke
                             }
                             else
                             {
+                                if (chunk.Length == 0)
+                                    chunk = c.ToString();
                                 TickEvent tickEvent = new TickEvent();
-                                tickEvent.str = c.ToString();
+                                tickEvent.str = chunk;
                                 tickEvent.indexOfLine = gasaindex++;
                                 tickEvent.lineNumber = gasaline;
                                 tickEvent.PronGuide = pronGuide; //모드가 1인 경우에는 같은pronguide, 0일 경우에는 null이 들어감
                                 lyricsEventsQueue.Enqueue(tickEvent);
                                 cut = false;
-                                prev = c;
+                                prev = chunk.Last();
+                                chunk = "";
                             }
                         }
                         /*foreach (var item in lyricsEventsQueue)
@@ -272,7 +367,15 @@ namespace TJKaraoke
                             if (temp == 0x01)
                             {
                                 syncStream.Read(buffer, 0, 4);
-                                TickEvent t = lyricsEventsQueue.Dequeue();
+                                TickEvent t;
+                                if (lyricsEventsQueue.Count != 0)
+                                {
+                                    t = lyricsEventsQueue.Dequeue();
+                                }
+                                else
+                                {
+                                    t = new TickEvent() { str = "" };//임시 오류처리
+                                }
                                 Console.WriteLine(t.str);
                                 t.tick = BitConverter.ToInt32(buffer, 0);
                                 t.cmd = temp;
@@ -336,7 +439,7 @@ namespace TJKaraoke
                 if (value != null)
                 {
                     privPronGuide = value;
-                    privPronGuide.Ref = new List<TickEvent>();
+                    if (privPronGuide.Ref == null) privPronGuide.Ref = new List<TickEvent>();
                     privPronGuide.Ref.Add(this);
                 }
             }
