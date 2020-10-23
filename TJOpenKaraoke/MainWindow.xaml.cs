@@ -36,7 +36,7 @@ namespace TJOpenKaraoke
         private void run_Click(object sender, RoutedEventArgs e)
         {
             byte[] file = File.ReadAllBytes((string)files.SelectedItem);
-            if(file[0]==0x00)
+            if (file[0] == 0x00)
             {
                 try
                 {

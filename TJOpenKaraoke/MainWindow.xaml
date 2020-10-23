@@ -12,6 +12,7 @@
         <ComboBox x:Name="RegionSelect" HorizontalAlignment="Left" Margin="10,64,0,0" VerticalAlignment="Top" Width="150"/>
         <ListBox x:Name="files" HorizontalAlignment="Left" Height="268" Margin="10,91,0,0" VerticalAlignment="Top" Width="150"/>
         <Button x:Name="run" Content="시작" HorizontalAlignment="Left" Margin="10,364,0,0" VerticalAlignment="Top" Width="150" Click="run_Click"/>
+        
 
     </Grid>
 </Window>

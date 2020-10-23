@@ -176,9 +176,7 @@ namespace TJKaraoke
                         bool skip = false;
                         PronGuide pronGuide = null;
                         char prev = '\r';
-                        string chunk = "";
-                        bool front = false;
-                        bool back = false;
+                        int part = 3;
                         while (lyricsQue.Count != 0)
                         {
                             char c = lyricsQue.Dequeue();
@@ -198,8 +196,20 @@ namespace TJKaraoke
                             }
                             else if (c == '[')
                             {
-                                mode = 3;
-                                skip = false;
+                                string temp = "";
+                                while ((c = lyricsQue.Dequeue()) != ']')
+                                {
+                                    temp += c;
+                                }
+                                if (temp.Length == 1)
+                                {
+                                    part = int.Parse(temp);
+                                }
+                                else
+                                {
+                                    part = 3;
+                                }
+                                skip = true;
                             }
                             else if (c == '＜')
                             {
@@ -226,7 +236,7 @@ namespace TJKaraoke
                                 pronGuide = null;
                                 skip = true;
                             }
-                            else if (!cut && specialCharsc3.Contains(prev)) //전 문자가 (인 경우에는 무조건 붙여줘야 함
+                            else if (specialCharsc3.Contains(prev)) //전 문자가 (인 경우에는 무조건 붙여줘야 함
                             {
                                 lyricsEventsQueue.LastOrDefault().str += c.ToString();
                                 prev = c;
@@ -252,17 +262,10 @@ namespace TJKaraoke
                                 skip = true;
                             }
 
-                            if (back)
-                            {
-                                chunk += c.ToString();
-                                prev = c;
-                                back = false;
-                            }
-
                             if (!skip && c == 'ん') //이게 최선인걸까
                             {
                                 TickEvent temp = lyricsEventsQueue.LastOrDefault();
-                                if (temp.PronGuide == null || temp.PronGuide.Pron.Length == 1 || (temp.PronGuide.Ref.Count == 1 && temp.PronGuide.Ref[0].str.Length == 1))
+                                if (temp.PronGuide == null || temp.PronGuide.Ref.Count == 1)
                                 {
                                     temp.str += c.ToString();
                                     skip = true;
@@ -272,54 +275,15 @@ namespace TJKaraoke
                             else if (!skip && c == 'っ')
                             {
                                 TickEvent temp = lyricsEventsQueue.LastOrDefault();
-                                if (temp.PronGuide == null)
+                                if (temp.PronGuide == null || temp.PronGuide.Ref.Count == 1)
                                 {
                                     temp.str += c.ToString();
                                     skip = true;
                                 }
-                                else
-                                {
-                                    if (temp.PronGuide.Pron.Last() == 'つ' || temp.PronGuide.Pron.Last() == 'お')
-                                    {
-                                        skip = false;
-                                    }
-                                    else
-                                    {
-                                        temp.str += c.ToString();
-                                        skip = true;
-                                    }
-                                }
                                 prev = c;
                             }
 
-                            if (mode == 3)
-                            {
-                                chunk += c;
-                                prev = c;
-                                if (c != ']') skip = true;
-                                else
-                                {
-                                    if (chunk.Contains("/"))
-                                    {
-                                        front = true;
-                                    }
-                                    else //[0]
-                                    {
-                                        back = true;
-                                    }
-                                    skip = true;
-                                    mode = 0;
-                                }
-                            }
 
-
-                            if (front)
-                            {
-                                lyricsEventsQueue.LastOrDefault().str += chunk;
-                                prev = chunk.Last();
-                                chunk = "";
-                                front = false;
-                            }
 
                             if (skip)
                                 skip = false;
@@ -343,17 +307,15 @@ namespace TJKaraoke
                             }
                             else
                             {
-                                if (chunk.Length == 0)
-                                    chunk = c.ToString();
                                 TickEvent tickEvent = new TickEvent();
-                                tickEvent.str = chunk;
+                                tickEvent.str = c.ToString();
                                 tickEvent.indexOfLine = gasaindex++;
                                 tickEvent.lineNumber = gasaline;
                                 tickEvent.PronGuide = pronGuide; //모드가 1인 경우에는 같은pronguide, 0일 경우에는 null이 들어감
+                                tickEvent.partNum = part;
                                 lyricsEventsQueue.Enqueue(tickEvent);
                                 cut = false;
-                                prev = chunk.Last();
-                                chunk = "";
+                                prev = c;
                             }
                         }
                         /*foreach (var item in lyricsEventsQueue)
@@ -374,7 +336,7 @@ namespace TJKaraoke
                                 }
                                 else
                                 {
-                                    t = new TickEvent() { str = "" };//임시 오류처리
+                                    t = new TickEvent() { str = "ERR" };//임시 오류처리
                                 }
                                 Console.WriteLine(t.str);
                                 t.tick = BitConverter.ToInt32(buffer, 0);
@@ -446,6 +408,7 @@ namespace TJKaraoke
         }
         public int lineNumber = 0;
         public int indexOfLine = 0;
+        public int partNum = 3; //0:높은, 1: 낮은, 2:혼합, 3:미지정
     }
     public class PronGuide
     {

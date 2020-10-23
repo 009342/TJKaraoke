@@ -114,7 +114,7 @@ namespace TJOpenKaraoke
             playbackA.Dispose();
             playbackB.Dispose();
             thread.Abort();
-
+            GC.Collect();
         }
         private LyricsTextBlock component = null;
         private void QueThread(Playback sender)
@@ -157,18 +157,24 @@ namespace TJOpenKaraoke
                             component.Foreground = Brushes.Blue;
                         }
                         component = null;
-                        foreach (var item in dockpanel.Children)
+                        foreach (var stackitem in dockpanel.Children)
                         {
-                            if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
+                            foreach (var item in ((DockPanel)((Grid)stackitem).Children[1]).Children)
                             {
-                                component = (LyricsTextBlock)item;
+                                if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
+                                {
+                                    component = (LyricsTextBlock)item;
+                                }
                             }
                         }
-                        foreach (var item in dockpanel2.Children)
+                        foreach (var stackitem in dockpanel2.Children)
                         {
-                            if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
+                            foreach (var item in ((DockPanel)((Grid)stackitem).Children[1]).Children)
                             {
-                                component = (LyricsTextBlock)item;
+                                if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
+                                {
+                                    component = (LyricsTextBlock)item;
+                                }
                             }
                         }
                     }
@@ -177,6 +183,7 @@ namespace TJOpenKaraoke
                         KWindow.Title = string.Format("{4} {0} {1}-{2} {3}", time, component.starttick, component.endtick, (time - component.starttick) / ((double)(component.endtick - component.starttick)), component.Text);
                         fill.GradientStops[1].Offset = (time - component.starttick) / ((double)(component.endtick - component.starttick));
                         fill.GradientStops[2].Offset = (time - component.starttick) / ((double)(component.endtick - component.starttick));
+
                         component.Foreground = fill;
                     }
                 }));
@@ -198,17 +205,47 @@ namespace TJOpenKaraoke
                 {
                     dockpanel.Children.Clear();//Dispose를 해줄 필요가 없다고??
                 }
-                foreach (var item in lyricsList)
+                var temp = lyricsList.FindAll(q => q.cmd == 0x01);
+                for (int j = 0; j < temp.Count;)
                 {
-                    if (item.cmd == 0x01)
+                    var item = temp[j];
+                    if (j == temp.Count) item.str += " ";
+                    Grid grid = new Grid();
+                    grid.ShowGridLines = true;
+                    grid.RowDefinitions.Add(new RowDefinition());
+                    grid.RowDefinitions.Add(new RowDefinition());
+                    grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = GridLength.Auto });
+                    grid.ColumnDefinitions.Add(new ColumnDefinition());
+
+
+
+                    DockPanel yomiPanel = new DockPanel() { Height = 40, HorizontalAlignment = HorizontalAlignment.Center };
+                    DockPanel mojiPanel = new DockPanel();
+
+
+                    Grid.SetRow(yomiPanel, 0);
+                    Grid.SetRow(mojiPanel, 1);
+                    Grid.SetColumn(yomiPanel, 0);
+                    Grid.SetColumn(mojiPanel, 0);
+                    grid.Children.Add(yomiPanel);
+                    grid.Children.Add(mojiPanel);
+
+                    int t = 1;
+                    if (item.PronGuide != null)
+                    {
+                        TextBlock yomigana = new TextBlock() { Text = item.PronGuide.Pron, FontSize = 30 };
+                        t = item.PronGuide.Ref.Count;
+                        yomiPanel.Children.Add(yomigana);
+                    }
+                    while (t-- > 0)
                     {
                         int i = item.str.IndexOf(" ");
                         LyricsTextBlock lyricsTextBlock;
                         if (i == 0)
                         {
-
                             lyricsTextBlock = new LyricsTextBlock()
                             {
+                                FontFamily = new FontFamily("MS Mincho"),
                                 Text = " ",
                                 line = item.lineNumber,
                                 indexofline = item.indexOfLine,
@@ -218,15 +255,12 @@ namespace TJOpenKaraoke
                                 starttick = 0,
                                 endtick = 0
                             };
-                            if (item.lineNumber % 2 == 1)
-                                dockpanel2.Children.Add(lyricsTextBlock);
-                            else
-                                dockpanel.Children.Add(lyricsTextBlock);
+                            mojiPanel.Children.Add(lyricsTextBlock);
 
                         }
-
                         lyricsTextBlock = new LyricsTextBlock()
                         {
+                            FontFamily = new FontFamily("MS Mincho"),
                             Text = item.str.Replace(" ", ""),
                             line = item.lineNumber,
                             indexofline = item.indexOfLine,
@@ -236,17 +270,13 @@ namespace TJOpenKaraoke
                             starttick = item.tick,
                             endtick = lyricsList[(lyricsList.IndexOf(item) + 1)].tick
                         };
-                        if (item.lineNumber % 2 == 1)
-                            dockpanel2.Children.Add(lyricsTextBlock);
-                        else
-                            dockpanel.Children.Add(lyricsTextBlock);
-
-
+                        mojiPanel.Children.Add(lyricsTextBlock);
                         if (i > 0)
                         {
 
                             lyricsTextBlock = new LyricsTextBlock()
                             {
+                                FontFamily = new FontFamily("MS Mincho"),
                                 Text = " ",
                                 line = item.lineNumber,
                                 indexofline = item.indexOfLine,
@@ -256,14 +286,21 @@ namespace TJOpenKaraoke
                                 starttick = 0,
                                 endtick = 0
                             };
-                            if (item.lineNumber % 2 == 1)
-                                dockpanel2.Children.Add(lyricsTextBlock);
-                            else
-                                dockpanel.Children.Add(lyricsTextBlock);
+                            mojiPanel.Children.Add(lyricsTextBlock);
                         }
+                        if (t > 0)
+                        {
+                            j++;
+                            item = temp[j];
+                        }
+
                     }
+                    if (item.lineNumber % 2 == 1)
+                        dockpanel2.Children.Add(grid);
+                    else
+                        dockpanel.Children.Add(grid);
 
-
+                    j++;
                 }
                 UpdateLayout();
             }));
@@ -338,7 +375,7 @@ namespace TJOpenKaraoke
             }
             if (e.Key == Key.Space)
             {
-                if(playbackA.IsRunning==true)
+                if (playbackA.IsRunning == true)
                 {
                     playbackA.Stop();
                     playbackB.Stop();
@@ -364,5 +401,6 @@ namespace TJOpenKaraoke
         public int indexofline;
         public int starttick;
         public int endtick;
+        public int part = 3;
     }
 }
