@@ -25,9 +25,9 @@ namespace TJKaraoke
 
         private static char[] specialCharsc2 = { '　', ' ' }; //La la이런 경우에는 잘라주어야 겠지
         private static char[] specialCharsc3 = { '(', }; //전에 문자를 확인할 필요가 있을 경우, 전 문자가 ( 인 경우
-        private static char[] specialCharsc4 = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
+        private static char[] specialCharsc4 = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9' ,'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
         ,'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\''}; //알파벳 예외처리 ばABC같은 경우에는 별도로
-        private static char[] specialCharsc5 = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+        //영어 숫자 영어
         public string Path { get; private set; }
         public int Country { get; private set; }
         public int MidiSize { get; private set; }
@@ -288,15 +288,6 @@ namespace TJKaraoke
                             if (skip)
                                 skip = false;
                             else if (!cut && specialCharsc4.Contains(prev) && specialCharsc4.Contains(c))
-                            {
-                                lyricsEventsQueue.LastOrDefault().str += c.ToString();
-                                if (specialCharsc2.Contains(c)) //띄어쓰기인 경우에는 뒤에 영어가 나와도 잘라줌
-                                {
-                                    cut = true;
-                                }
-                                prev = c;
-                            }
-                            else if (!cut && specialCharsc5.Contains(prev) && specialCharsc5.Contains(c))
                             {
                                 lyricsEventsQueue.LastOrDefault().str += c.ToString();
                                 if (specialCharsc2.Contains(c)) //띄어쓰기인 경우에는 뒤에 영어가 나와도 잘라줌

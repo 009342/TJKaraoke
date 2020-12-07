@@ -7,12 +7,19 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="441.935" Width="545.161" Loaded="mainWindow_Loaded">
     <Grid>
-        <ComboBox x:Name="MIDI_PortA" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="150"/>
-        <ComboBox x:Name="MIDI_PortB" HorizontalAlignment="Left" Margin="10,37,0,0" VerticalAlignment="Top" Width="150"/>
-        <ComboBox x:Name="RegionSelect" HorizontalAlignment="Left" Margin="10,64,0,0" VerticalAlignment="Top" Width="150"/>
-        <ListBox x:Name="files" HorizontalAlignment="Left" Height="268" Margin="10,91,0,0" VerticalAlignment="Top" Width="150"/>
-        <Button x:Name="run" Content="시작" HorizontalAlignment="Left" Margin="10,364,0,0" VerticalAlignment="Top" Width="150" Click="run_Click"/>
-        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <ComboBox x:Name="MIDI_PortA" HorizontalAlignment="Stretch" Margin="10,10" VerticalAlignment="Top" Grid.Row="0"/>
+        <ComboBox x:Name="MIDI_PortB" HorizontalAlignment="Stretch" Margin="10,10" VerticalAlignment="Top" Grid.Row="1"/>
+        <ComboBox x:Name="RegionSelect" HorizontalAlignment="Stretch" Margin="10,10" VerticalAlignment="Top" Grid.Row="2"/>
+        <ListBox x:Name="files" HorizontalAlignment="Stretch" Margin="10,10" VerticalAlignment="Top" Grid.Row="3"/>
+        <Button x:Name="run" Content="시작" HorizontalAlignment="Stretch" Margin="10,10" VerticalAlignment="Top" Grid.Row="4" Click="run_Click"/>
+
 
     </Grid>
 </Window>

@@ -36,7 +36,7 @@ namespace TJOpenKaraoke
         private void run_Click(object sender, RoutedEventArgs e)
         {
             byte[] file = File.ReadAllBytes((string)files.SelectedItem);
-            if (file[0] == 0x00)
+            if (file.Length > 0 && file[0] == 0x00)
             {
                 try
                 {
@@ -58,9 +58,17 @@ namespace TJOpenKaraoke
                 }
             }
             //File.WriteAllBytes("temp", file);
-            if (karaokeWindow != null && karaokeWindow.IsEnabled == true) karaokeWindow.Close();
-            karaokeWindow = new KaraokeWindow(file, RegionSelect.SelectedIndex, MIDI_PortA.SelectedIndex, MIDI_PortB.SelectedIndex);
-            karaokeWindow.Show();
+            try
+            {
+                if (karaokeWindow != null && karaokeWindow.IsEnabled == true) karaokeWindow.Close();
+                karaokeWindow = new KaraokeWindow(file, RegionSelect.SelectedIndex, MIDI_PortA.SelectedIndex, MIDI_PortB.SelectedIndex);
+                karaokeWindow.Show();
+            }
+            catch (Exception)
+            {
+
+            }
+
         }
     }
 }

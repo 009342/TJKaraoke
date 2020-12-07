@@ -8,36 +8,6 @@
         Title="KaraokeWindow" Height="450" Width="800" Closing="KWindow_Closing" KeyDown="KWindow_KeyDown">
     <Grid x:Name="mainGrid">
         <StackPanel VerticalAlignment="Bottom">
-            <Rectangle Height="80">
-                <Rectangle.Fill>
-                    <VisualBrush>
-                        <VisualBrush.Visual>
-                            <TextBlock Foreground="Aqua">
-                                안녕하세요かーかー嘘ってき思っ１234メーデー
-                            </TextBlock>
-                        </VisualBrush.Visual>
-                    </VisualBrush>
-                </Rectangle.Fill>
-            </Rectangle>
-            <Rectangle Height="100">
-                <Rectangle.Fill>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="Yellow" Offset="0.0" />
-                        <GradientStop Color="Red" Offset="0.25" />
-                        <GradientStop Color="Blue" Offset="0.75" />
-                        <GradientStop Color="LimeGreen" Offset="1.0" />
-                    </LinearGradientBrush>
-                </Rectangle.Fill>
-                <Rectangle.OpacityMask>
-                    <VisualBrush>
-                        <VisualBrush.Visual>
-                            <TextBlock>
-                                안녕하세요かーかー嘘ってき思っ１234メーデー
-                            </TextBlock>
-                        </VisualBrush.Visual>
-                    </VisualBrush>
-                </Rectangle.OpacityMask>
-            </Rectangle>
             <DockPanel Name="dockpanel"/>
             <DockPanel Name="dockpanel2"/>
         </StackPanel>

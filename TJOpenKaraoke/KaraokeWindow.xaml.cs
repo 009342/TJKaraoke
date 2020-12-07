@@ -35,7 +35,6 @@ namespace TJOpenKaraoke
         OutputDevice outputDeviceA;
         OutputDevice outputDeviceB;
         TJN karaoke = null;
-        Thread thread;
         LinearGradientBrush fill = new LinearGradientBrush();
         public KaraokeWindow(byte[] file, int country, int MidiOutputA, int MidiOutputB)
         {
@@ -91,39 +90,15 @@ namespace TJOpenKaraoke
             playbackB = midiFileB.GetPlayback(outputDeviceB);
             playbackA.Start();
             playbackB.Start();
-            thread = new Thread(() => { QueThread(playbackA); });
-            thread.Start();
+            CompositionTarget.Rendering += CompositionTarget_Rendering;
         }
-        private void KWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            playbackA.Stop();
-            playbackB.Stop();
-            outputDeviceA.SendEvent(new StopEvent());
-            outputDeviceB.SendEvent(new StopEvent());
-
-            outputDeviceA.SendEvent(new NormalSysExEvent(new byte[] { 0x7E, 0x7F, 0x09, 0x00, 0xF7 }));
-            outputDeviceB.SendEvent(new NormalSysExEvent(new byte[] { 0x7E, 0x7F, 0x09, 0x00, 0xF7 })); //GM Reset
-            outputDeviceA.SendEvent(new NormalSysExEvent(new byte[] { 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, 0xF7 }));
-            outputDeviceB.SendEvent(new NormalSysExEvent(new byte[] { 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, 0xF7 })); //GS Reset
-            //https://www.recordingblogs.com/wiki/general-midi-system-enable-disable-message
-            //http://odasan.s48.xrea.com/dtm/labo/gsreset.html
-            //http://forums.rolandclan.com/viewtopic.php?f=27&t=30753
-
-            outputDeviceA.Dispose();
-            outputDeviceB.Dispose();
-            playbackA.Dispose();
-            playbackB.Dispose();
-            thread.Abort();
-            GC.Collect();
-        }
-        private LyricsTextBlock component = null;
-        private void QueThread(Playback sender)
+        bool started = false;
+        private void CompositionTarget_Rendering(object sender, EventArgs e)
         {
             //KWindow.Dispatcher.Invoke(new Action(()=> { }));
-            bool started = false;
-            while (syncQue.Count != 0)
+            if (syncQue.Count != 0)
             {
-                int time = (int)TimeConverter.ConvertFrom(sender.GetCurrentTime<ITimeSpan>(), sender.TempoMap);
+                int time = (int)TimeConverter.ConvertFrom(playbackA.GetCurrentTime<ITimeSpan>(), playbackA.TempoMap);
                 TickEvent peek = syncQue.Peek();
                 if (peek.tick <= time)
                 {
@@ -148,49 +123,68 @@ namespace TJOpenKaraoke
                     }
 
                 }
-                KWindow.Dispatcher.Invoke(new Action(() =>
+                if (component == null || !(component.starttick <= time && time <= component.endtick))
                 {
-                    if (component == null || !(component.starttick <= time && time <= component.endtick))
-                    {
-                        if (component != null)
-                        {
-                            component.Foreground = Brushes.Blue;
-                        }
-                        component = null;
-                        foreach (var stackitem in dockpanel.Children)
-                        {
-                            foreach (var item in ((DockPanel)((Grid)stackitem).Children[1]).Children)
-                            {
-                                if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
-                                {
-                                    component = (LyricsTextBlock)item;
-                                }
-                            }
-                        }
-                        foreach (var stackitem in dockpanel2.Children)
-                        {
-                            foreach (var item in ((DockPanel)((Grid)stackitem).Children[1]).Children)
-                            {
-                                if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
-                                {
-                                    component = (LyricsTextBlock)item;
-                                }
-                            }
-                        }
-                    }
                     if (component != null)
                     {
-                        KWindow.Title = string.Format("{4} {0} {1}-{2} {3}", time, component.starttick, component.endtick, (time - component.starttick) / ((double)(component.endtick - component.starttick)), component.Text);
-                        fill.GradientStops[1].Offset = (time - component.starttick) / ((double)(component.endtick - component.starttick));
-                        fill.GradientStops[2].Offset = (time - component.starttick) / ((double)(component.endtick - component.starttick));
-
-                        component.Foreground = fill;
+                        component.Foreground = Brushes.Blue;
                     }
-                }));
-                Thread.Sleep(1);
+                    component = null;
+                    foreach (var stackitem in dockpanel.Children)
+                    {
+                        foreach (var item in ((DockPanel)((Grid)stackitem).Children[1]).Children)
+                        {
+                            if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
+                            {
+                                component = (LyricsTextBlock)item;
+                            }
+                        }
+                    }
+                    foreach (var stackitem in dockpanel2.Children)
+                    {
+                        foreach (var item in ((DockPanel)((Grid)stackitem).Children[1]).Children)
+                        {
+                            if (time >= ((LyricsTextBlock)item).starttick && time <= ((LyricsTextBlock)item).endtick)
+                            {
+                                component = (LyricsTextBlock)item;
+                            }
+                        }
+                    }
+                }
+                if (component != null)
+                {
+                    KWindow.Title = string.Format("{4} {0} {1}-{2} {3}", time, component.starttick, component.endtick, (time - component.starttick) / ((double)(component.endtick - component.starttick)), component.Text);
+                    fill.GradientStops[1].Offset = (time - component.starttick) / ((double)(component.endtick - component.starttick));
+                    fill.GradientStops[2].Offset = (time - component.starttick) / ((double)(component.endtick - component.starttick));
+
+                    component.Foreground = fill;
+                }
+
             }
         }
 
+        private void KWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            playbackA.Stop();
+            playbackB.Stop();
+            outputDeviceA.SendEvent(new StopEvent());
+            outputDeviceB.SendEvent(new StopEvent());
+
+            outputDeviceA.SendEvent(new NormalSysExEvent(new byte[] { 0x7E, 0x7F, 0x09, 0x00, 0xF7 }));
+            outputDeviceB.SendEvent(new NormalSysExEvent(new byte[] { 0x7E, 0x7F, 0x09, 0x00, 0xF7 })); //GM Reset
+            outputDeviceA.SendEvent(new NormalSysExEvent(new byte[] { 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, 0xF7 }));
+            outputDeviceB.SendEvent(new NormalSysExEvent(new byte[] { 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, 0xF7 })); //GS Reset
+            //https://www.recordingblogs.com/wiki/general-midi-system-enable-disable-message
+            //http://odasan.s48.xrea.com/dtm/labo/gsreset.html
+            //http://forums.rolandclan.com/viewtopic.php?f=27&t=30753
+
+            outputDeviceA.Dispose();
+            outputDeviceB.Dispose();
+            playbackA.Dispose();
+            playbackB.Dispose();
+            GC.Collect();
+        }
+        private LyricsTextBlock component = null;
         private void ShowLine(int line)
         {
             List<TickEvent> lyricsList = new List<TickEvent>(karaoke.Lyrics.tickEvents.FindAll(q => (q.cmd == 0x01 || q.cmd == 0x02) && q.lineNumber == line));
